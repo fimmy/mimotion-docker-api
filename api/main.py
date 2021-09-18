@@ -4,26 +4,6 @@
 import requests,time,re,json,random
 import os
  
-
- 
-def telegram_bot(title, content):
-    print("\n")
-    tg_bot_token = TG_BOT_TOKEN
-    tg_user_id = TG_USER_ID
-    if "TG_BOT_TOKEN" in os.environ and "TG_USER_ID" in os.environ:
-        tg_bot_token = os.environ["TG_BOT_TOKEN"]
-        tg_user_id = os.environ["TG_USER_ID"]
-    if not tg_bot_token or not tg_user_id:
-        print("Telegram推送的tg_bot_token或者tg_user_id未设置!!\n取消推送")
-        return
-    print("Telegram 推送开始")
-    send_data = {"chat_id": tg_user_id, "text": title +
-                 '\n\n'+content, "disable_web_page_preview": "true"}
-    response = requests.post(
-        url='https://api.telegram.org/bot%s/sendMessage' % (tg_bot_token), data=send_data)
-    print(response.text)
- 
-now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 headers = {
         'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 9; MI 6 MIUI/20.6.18)'
         }
@@ -80,12 +60,13 @@ def login(user,password):
   
 #主函数
 def main(user, passwd, step):
+    now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
     user = str(user)
     password = str(passwd)
     step = str(step)
     if user == '' or password == '':
         print ("用户名或密码填写有误！")
-        return
+        return (-1,"用户名或密码填写有误！")
      
     if step == '':
         print ("已设置为随机步数（20000-29999）")
@@ -94,7 +75,7 @@ def main(user, passwd, step):
     login_token,userid = login(user,password)
     if login_token == 0:
         print("登陆失败！")
-        return "login fail!"
+        return (-1,"登陆失败!")
   
     t = get_time()
       
@@ -121,7 +102,7 @@ def main(user, passwd, step):
     #print(response)
     result = f"{user[:4]}****{user[-4:]}: [{now}] 修改步数（{step}）"+ response['message']
     print(result)
-    return result
+    return (0,result)
    
 #获取时间戳
 def get_time():
@@ -129,8 +110,8 @@ def get_time():
     response = requests.get(url,headers=headers).json()
     t = response['data']['t']
     return t
-   
-#获取app_token
+
+    #获取app_token
 def get_app_token(login_token):
     url = f"https://account-cn.huami.com/v1/client/app_tokens?app_name=com.xiaomi.hm.health&dn=api-user.huami.com%2Capi-mifit.huami.com%2Capp-analytics.huami.com&login_token={login_token}"
     response = requests.get(url,headers=headers).json()
@@ -138,117 +119,3 @@ def get_app_token(login_token):
     #print("app_token获取成功！")
     #print(app_token)
     return app_token
-
-##
-def qywx(msg):
-	server_url = f"https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid={corpid}&corpsecret={corpsecret}"
-	re = requests.post(server_url)
-	jsontxt = json.loads(re.text)
-	access_token = jsontxt['access_token']
-	html = msg.replace('\n', '<br>')
-	url = f"https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token={access_token}"
-	data ={"touser" : "@all",
-		   "msgtype" : "mpnews",
-		   "agentid" : "1000002",
-		   "mpnews" : {
-				 "articles" : [
-					   {
-							"title" : "小米运动推送",
-							 "content" : html,
-							 "author" : "智能推送助手",
-							 "thumb_media_id": "2GhsYxtOfHM92u0_WK0iNTjxxes7EAH4-GbAgxfc7YyZt17JEiTfHFkFZ4ob9xL7j",
-							 "content_source_url" : "",
-							 "digest" : msg
-						}
-							   ]
-					   },
-		   "safe": 0
-		  }
-
-	send_msges=(bytes(json.dumps(data), 'utf-8'))
-	res = requests.post(url, send_msges)
-	respon = res.json()   #当返回的数据是json串的时候直接用.json即可将respone转换成字典
-
-	##print (res.text)
-	if respon['errmsg'] == "ok":
-		print(f"推送成功\n")
-	else:
-		 print(f" 推送失败:鬼知道哪错了\n")
-		 
-	print("推鬼知道修改成功没")
-		
-## 推送QQ
-def push_qq(msg):
-    """
-    推送消息到QQ酷推
-    """
-    if key == '':
-        print("[注意] 未提供key，不进行推送！")
-    else:
-        server_url = f"https://push.xuthus.cc/send/{key}?"
-        params = {
-             "c": msg
-        }
-      
-        response = requests.get(server_url, params=params)
-        json_data = response.json()
-        if json_data['reason'] == "操作成功":
-            print(f"推送成功")
-        else:
-            print(f" 推送失败:鬼知道哪错了")
-     
-        print("QQ酷推鬼知道修改成功没")    
-# 推送server
-def push_wx(msg):
-    """
-    推送消息到微信
-    """
-    if sckey == '':
-        print("[注意] 未提供sckey，不进行推送！")
-    else:
-        server_url = f"https://sc.ftqq.com/{sckey}.send"
-        params = {
-            "text": '小米运动 步数修改',
-            "desp": msg
-        }
- 
-        response = requests.get(server_url, params=params)
-        json_data = response.json()
- 
-        if json_data['errno'] == 0:
-            print(f"[{now}] 推送成功。")
-        else:
-            print(f"[{now}] 推送失败：{json_data['errno']}({json_data['errmsg']})")
-
-if __name__ ==  "__main__":
-    # ServerChan&
-    sckey = os.environ.get("sckey")
-    if str(sckey) == '0':
-        sckey = ''
-    # 用户名（格式为 13800138000）
-    user = os.environ.get("user")
-    # 登录密码
-    passwd = os.environ.get("pwd")
-    # 要修改的步数，直接输入想要修改的步数值，留空为随机步数
-    step = os.environ.get("step")
-    corpid = os.environ.get("corpid")
-    corpsecret = os.environ.get("corpsecret")
-
-    user_list = user.split('#')
-    passwd_list = passwd.split('#')
-    setp_array = step.split('-')
-
-    if len(user_list) == len(passwd_list):
-        if user == '' :
-          print("啥也没有，不执行，快去填写账号密码")
-        else :
-          push = ''
-          for line in range(0,len(user_list)):
-              if len(setp_array) == 2:
-                  step = str(random.randint(int(setp_array[0]),int(setp_array[1])))
-              elif str(step) == '0':
-                  step = ''
-              push += main(user_list[line], passwd_list[line], step) + '\n'
-          send.send(push)
-    else:
-        print('用户名和密码数量不对')
